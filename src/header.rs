@@ -341,6 +341,7 @@ impl TbfHeader {
         storage_ids: (Option<u32>, Option<Vec<u32>>, Option<Vec<u32>>),
         kernel_version: Option<(u16, u16)>,
         disabled: bool,
+        ignore_fixed_addresses: bool,
     ) -> usize {
         // Need to calculate lengths ahead of time. Need the base and the
         // program section. For backwards compatibility we include both the main
@@ -372,7 +373,8 @@ impl TbfHeader {
         // Check if we are going to include the fixed address header. If so, we
         // need to make sure we include it in the length. If either address is
         // set we need to include the entire header.
-        if fixed_address_ram.is_some() || fixed_address_flash.is_some() {
+        if !ignore_fixed_addresses && (fixed_address_ram.is_some() || fixed_address_flash.is_some())
+        {
             header_length += mem::size_of::<TbfHeaderFixedAddresses>();
         }
 
@@ -468,7 +470,8 @@ impl TbfHeader {
         }
 
         // If at least one RAM of flash address is fixed, include the header.
-        if fixed_address_ram.is_some() || fixed_address_flash.is_some() {
+        if !ignore_fixed_addresses && (fixed_address_ram.is_some() || fixed_address_flash.is_some())
+        {
             self.hdr_fixed_addresses = Some(TbfHeaderFixedAddresses {
                 base: TbfHeaderTlv {
                     tipe: TbfHeaderTypes::FixedAddresses,

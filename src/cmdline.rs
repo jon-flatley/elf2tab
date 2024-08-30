@@ -214,6 +214,13 @@ pub struct Opt {
         help = "Add an 4096-bit RSA signature credential using this private key"
     )]
     pub rsa4096_private_key: Option<PathBuf>,
+
+    #[arg(
+        long = "ignore_fixed_addresses",
+        id = "ignore_fixed_addresses",
+        help = "Omit the FixedAddress section from the TBF header"
+    )]
+    pub ignore_fixed_addresses: bool,
 }
 
 mod test {

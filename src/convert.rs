@@ -141,6 +141,7 @@ pub fn elf_to_tbf(
     sha384: bool,
     sha512: bool,
     rsa4096_private_key: Option<PathBuf>,
+    ignore_fixed_addresses: bool,
 ) -> io::Result<()> {
     let package_name = package_name.unwrap_or_default();
 
@@ -461,6 +462,7 @@ pub fn elf_to_tbf(
         storage_ids,
         kernel_version,
         disabled,
+        ignore_fixed_addresses,
     );
 
     ////////////////////////////////////////////////////////////////////////////
