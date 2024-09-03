@@ -122,6 +122,11 @@ fn main() {
         if opt.verbose {
             println!("Creating {:?}", tbf_path);
         }
+
+        let fixed_addresses = match opt.force_fixed_addresses {
+            Some(ref v) => Some((v[0], v[1])),
+            None => None,
+        };
         // First write the TBF into a vector, to allow each read access
         // for generating credentials; once it's written to the vector, flush
         // it to a file.
@@ -145,7 +150,7 @@ fn main() {
             opt.sha384_enable,
             opt.sha512_enable,
             opt.rsa4096_private_key.clone(),
-            opt.ignore_fixed_addresses,
+            fixed_addresses,
         )
         .unwrap();
         if opt.verbose {

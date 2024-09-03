@@ -141,8 +141,8 @@ pub fn elf_to_tbf(
     sha384: bool,
     sha512: bool,
     rsa4096_private_key: Option<PathBuf>,
-    ignore_fixed_addresses: bool,
-) -> io::Result<()> {
+    force_addresses: Option<(u32, u32)>,
+) -> io::Result<header::TbfHeader> {
     let package_name = package_name.unwrap_or_default();
 
     // Load and parse ELF.
@@ -452,6 +452,12 @@ pub fn elf_to_tbf(
     tbfheader.set_binary_end_offset(0);
     tbfheader.set_app_version(app_version);
 
+    // Set these to something so the header field is added.
+    if force_addresses.is_some() {
+        fixed_address_flash = Some(0);
+        fixed_address_ram = Some(0);
+    }
+
     let header_length = tbfheader.create(
         minimum_ram_size,
         writeable_flash_regions_count,
@@ -462,8 +468,11 @@ pub fn elf_to_tbf(
         storage_ids,
         kernel_version,
         disabled,
-        ignore_fixed_addresses,
     );
+
+    if let Some(addresses) = force_addresses {
+        tbfheader.set_fixed_addrs(addresses.0 + header_length as u32, addresses.1);
+    }
 
     ////////////////////////////////////////////////////////////////////////////
     // Adjust the protected region size to make fixed address work
@@ -519,6 +528,8 @@ pub fn elf_to_tbf(
         } else if let Some(fixed_protected_region_size) = protected_region_size_arg {
             // A desired protected region size was specified on the command line:
             fixed_protected_region_size
+        } else if force_addresses.is_some() {
+            header_length as u32
         } else {
             // The protected region was neither specified on the command line,
             // nor as part of the ELF file. Normally, we default to an
@@ -674,6 +685,10 @@ pub fn elf_to_tbf(
                     }
 
                     if padding >= 4096 {
+                        if force_addresses.is_some() {
+                            println!("  Just kidding, too much padding, we're done here.");
+                            break;
+                        }
                         // Warn the user that we're inserting a large amount of
                         // padding (>= 4096, which is the ELF file segment padding)
                         // into the binary. This can be a sign of an incorrect /
@@ -1142,5 +1157,39 @@ pub fn elf_to_tbf(
     // Pad to get a power of 2 sized flash app, if requested.
     util::do_pad(output, post_content_pad)?;
 
-    Ok(())
+    Ok(tbfheader)
+}
+
+mod test {
+    use super::*;
+    use std::fs::File;
+
+    #[test]
+    fn test_otbn() {
+        let mut elf_file = File::open(Path::new("otbn-boot.elf")).unwrap();
+        let mut output = Vec::new();
+        let header = elf_to_tbf(
+            &mut elf_file,
+            &mut output,
+            None,
+            true,
+            None,
+            1024,
+            1024,
+            None,
+            Vec::new(),
+            (None, None, None),
+            Some((2, 0)),
+            true,
+            0,
+            0,
+            false,
+            false,
+            false,
+            None,
+            Some((0x2005_0000, 0x1000_8000)),
+        ).unwrap();
+
+        assert_eq!(header.binary_end_offset(), 0x0000_1048);
+    }
 }

@@ -341,7 +341,6 @@ impl TbfHeader {
         storage_ids: (Option<u32>, Option<Vec<u32>>, Option<Vec<u32>>),
         kernel_version: Option<(u16, u16)>,
         disabled: bool,
-        ignore_fixed_addresses: bool,
     ) -> usize {
         // Need to calculate lengths ahead of time. Need the base and the
         // program section. For backwards compatibility we include both the main
@@ -373,7 +372,7 @@ impl TbfHeader {
         // Check if we are going to include the fixed address header. If so, we
         // need to make sure we include it in the length. If either address is
         // set we need to include the entire header.
-        if !ignore_fixed_addresses && (fixed_address_ram.is_some() || fixed_address_flash.is_some())
+        if fixed_address_ram.is_some() || fixed_address_flash.is_some()
         {
             header_length += mem::size_of::<TbfHeaderFixedAddresses>();
         }
@@ -470,7 +469,7 @@ impl TbfHeader {
         }
 
         // If at least one RAM of flash address is fixed, include the header.
-        if !ignore_fixed_addresses && (fixed_address_ram.is_some() || fixed_address_flash.is_some())
+        if fixed_address_ram.is_some() || fixed_address_flash.is_some()
         {
             self.hdr_fixed_addresses = Some(TbfHeaderFixedAddresses {
                 base: TbfHeaderTlv {
@@ -559,6 +558,18 @@ impl TbfHeader {
     /// Update the header with correct size for the entire app binary.
     pub fn set_total_size(&mut self, total_size: u32) {
         self.hdr_base.total_size = total_size;
+    }
+
+    /// Update the header with correct fixed flash address.
+    pub fn set_fixed_addrs(&mut self, flash_addr: u32, ram_addr: u32) {
+        self.hdr_fixed_addresses = Some(TbfHeaderFixedAddresses {
+            base: TbfHeaderTlv {
+                tipe: TbfHeaderTypes::FixedAddresses,
+                length: 8,
+            },
+            start_process_flash: flash_addr,
+            start_process_ram: ram_addr,
+        });
     }
 
     /// Update the header with the correct offset for the _start function.

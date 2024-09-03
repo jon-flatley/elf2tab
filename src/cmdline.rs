@@ -216,11 +216,12 @@ pub struct Opt {
     pub rsa4096_private_key: Option<PathBuf>,
 
     #[arg(
-        long = "ignore_fixed_addresses",
-        id = "ignore_fixed_addresses",
-        help = "Omit the FixedAddress section from the TBF header"
+        long = "force_fixed_addresses",
+        id = "force_fixed_addresses",
+        num_args=2,
+        help = "Force the TAB's location to \"FLASH+header,ROM\""
     )]
-    pub ignore_fixed_addresses: bool,
+    pub force_fixed_addresses: Option<Vec<u32>>,
 }
 
 mod test {
